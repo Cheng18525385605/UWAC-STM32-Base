@@ -1,0 +1,1 @@
+功能：发送send_1hz_4s，开发板pwm产生信号，频率1hz，adc采样通过dma+sdio写到sd卡中
