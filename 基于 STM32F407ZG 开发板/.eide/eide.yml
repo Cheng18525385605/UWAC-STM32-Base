@@ -1,0 +1,224 @@
+version: "4.1"
+name: Template
+type: ARM
+deviceName: null
+packDir: null
+srcDirs: []
+virtualFolder:
+  name: <virtual_root>
+  files: []
+  folders:
+    - name: User
+      files:
+        - path: User/main.c
+        - path: User/stm32f4xx_it.c
+      folders: []
+    - name: Startup
+      files:
+        - path: Libraries/CMSIS/startup_stm32f40_41xxx.s
+      folders: []
+    - name: StdPeriph_Driver
+      files:
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_gpio.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_rcc.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_syscfg.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_exti.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_tim.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_usart.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_adc.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dma.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_flash.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_fsmc.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_spi.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_sdio.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_rtc.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_wwdg.c
+        - path: Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_iwdg.c
+      folders: []
+    - name: CMSIS
+      files:
+        - path: Libraries/CMSIS/system_stm32f4xx.c
+      folders: []
+    - name: Public
+      files:
+        - path: Public/system.c
+        - path: Public/SysTick.c
+        - path: Public/usart.c
+        - path: Public/parse_cmd.c
+        - path: Public/uart_cmd_process.c
+      folders: []
+    - name: APP
+      files:
+        - path: APP/led/led.c
+        - path: APP/pwm/pwm.c
+        - path: APP/time/time.c
+        - path: APP/adc/adc.c
+        - path: APP/dma/dma.c
+        - path: APP/sound_wav/wav.c
+        - path: APP/sd/sdio_sdcard.c
+        - path: APP/tftlcd/tftlcd.c
+        - path: APP/flash/flash.c
+        - path: APP/spi/spi.c
+      folders: []
+    - name: Fatfs
+      files:
+        - path: Fatfs/fatfs_app/fatfs_app.c
+        - path: Fatfs/src/ff.c
+        - path: Fatfs/src/option/cc936.c
+        - path: Fatfs/src/diskio.c
+      folders: []
+    - name: my_malloc
+      files:
+        - path: Malloc/malloc.c
+      folders: []
+dependenceList: []
+outDir: build
+miscInfo:
+  uid: bf3366f84dd163c582d756e3a7ffa10f
+targets:
+  Target 1:
+    cppPreprocessAttrs:
+      defineList:
+        - STM32F40_41xxx
+        - USE_STDPERIPH_DRIVER
+      incList:
+        - User
+        - Libraries/CMSIS
+        - Libraries/STM32F4xx_StdPeriph_Driver/inc
+        - APP/led
+        - Public
+        - APP/beep
+        - APP/key
+        - APP/exti
+        - APP/time
+        - APP/pwm
+        - APP/adc
+        - APP/dma
+        - APP/sound_wav
+        - APP/sd
+        - Fatfs/src
+        - Fatfs/fatfs_app
+        - APP/tftlcd
+        - Malloc
+        - APP/flash
+        - APP/spi
+        - .cmsis/include
+        - RTE/_Target 1
+      libList: []
+    excludeList: []
+    toolchain: AC5
+    toolchainConfigMap:
+      AC5:
+        archExtensions: ""
+        cpuType: Cortex-M4
+        floatingPointHardware: single
+        options:
+          version: 4
+          afterBuildTasks: []
+          asm-compiler:
+            defines: []
+          beforeBuildTasks: []
+          c/cpp-compiler:
+            CXX_FLAGS: --diag_suppress=1 --diag_suppress=1295
+            C_FLAGS: --diag_suppress=1 --diag_suppress=1295
+            c99-mode: true
+            one-elf-section-per-function: true
+            optimization: level-0
+            warnings: all-warnings
+          global:
+            output-debug-info: enable
+            use-microLIB: true
+          linker:
+            $outputTaskExcludes:
+              - .bin
+            output-format: elf
+            ro-base: "0x08000000"
+            rw-base: "0x20000000"
+            xo-base: ""
+        scatterFilePath: ""
+        storageLayout:
+          RAM:
+            - id: 1
+              isChecked: false
+              mem:
+                size: "0x0"
+                startAddr: "0x0"
+              noInit: false
+              tag: RAM
+            - id: 2
+              isChecked: false
+              mem:
+                size: "0x0"
+                startAddr: "0x0"
+              noInit: false
+              tag: RAM
+            - id: 3
+              isChecked: false
+              mem:
+                size: "0x0"
+                startAddr: "0x0"
+              noInit: false
+              tag: RAM
+            - id: 1
+              isChecked: true
+              mem:
+                size: "0x20000"
+                startAddr: "0x20000000"
+              noInit: false
+              tag: IRAM
+            - id: 2
+              isChecked: false
+              mem:
+                size: "0x10000"
+                startAddr: "0x10000000"
+              noInit: false
+              tag: IRAM
+          ROM:
+            - id: 1
+              isChecked: false
+              isStartup: false
+              mem:
+                size: "0x0"
+                startAddr: "0x0"
+              tag: ROM
+            - id: 2
+              isChecked: false
+              isStartup: false
+              mem:
+                size: "0x0"
+                startAddr: "0x0"
+              tag: ROM
+            - id: 3
+              isChecked: false
+              isStartup: false
+              mem:
+                size: "0x0"
+                startAddr: "0x0"
+              tag: ROM
+            - id: 1
+              isChecked: true
+              isStartup: true
+              mem:
+                size: "0x100000"
+                startAddr: "0x8000000"
+              tag: IROM
+            - id: 2
+              isChecked: false
+              isStartup: false
+              mem:
+                size: "0x0"
+                startAddr: "0x0"
+              tag: IROM
+        useCustomScatterFile: false
+    uploadConfigMap:
+      JLink:
+        baseAddr: ""
+        bin: ""
+        cpuInfo:
+          cpuName: "null"
+          vendor: "null"
+        otherCmds: ""
+        proType: 1
+        speed: 8000
+    uploader: JLink
