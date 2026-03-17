@@ -4,7 +4,7 @@
 #include "system.h"
 
 
-//SDIO鐩稿叧鏍囧織浣�,鎷疯礉鑷�:stm32f4xx_sdio.h
+//SDIO?????,???:stm32f4xx_sdio.h
 #define SDIO_FLAG_CCRCFAIL                  ((uint32_t)0x00000001)
 #define SDIO_FLAG_DCRCFAIL                  ((uint32_t)0x00000002)
 #define SDIO_FLAG_CTIMEOUT                  ((uint32_t)0x00000004)
@@ -31,23 +31,23 @@
 #define SDIO_FLAG_CEATAEND                  ((uint32_t)0x00800000)
 
 
-//鐢ㄦ埛閰嶇疆鍖�			  
-//SDIO鏃堕挓璁＄畻鍏�寮�:SDIO_CK鏃堕挓=SDIOCLK/[clkdiv+2];鍏朵腑,SDIOCLK鍥哄畾涓�48Mhz
-//浣跨敤DMA妯″紡鐨勬椂鍊�,浼犺緭閫熺巼鍙�浠ュ埌48Mhz(bypass on鏃�),涓嶈繃濡傛灉浣犵殑鍗′笉鏄�楂橀€�
-//鍗�,鍙�鑳戒篃浼氬嚭閿�,鍑洪敊灏辫�烽檷浣庢椂閽�
-#define SDIO_INIT_CLK_DIV        0x76 		//SDIO鍒濆�嬪寲棰戠巼锛屾渶澶�400Kh  
-#define SDIO_TRANSFER_CLK_DIV    0x00		//SDIO浼犺緭棰戠巼,璇ュ€煎お灏忓彲鑳戒細瀵艰嚧璇诲啓鏂囦欢鍑洪敊 
+//?????			  
+//SDIO??????:SDIO_CK??=SDIOCLK/[clkdiv+2];??,SDIOCLK???48Mhz
+//??DMA?????,???????48Mhz(bypass on?),???????????
+//?,??????,????????
+#define SDIO_INIT_CLK_DIV        0x76 		//SDIO????????400Kh  
+#define SDIO_TRANSFER_CLK_DIV    0x00		//SDIO????,??????????????? 
 										 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////// 
-//SDIO宸ヤ綔妯″紡瀹氫箟,閫氳繃SD_SetDeviceMode鍑芥暟璁剧疆.
-#define SD_POLLING_MODE    	0  	//鏌ヨ�㈡ā寮�,璇ユā寮忎笅,濡傛灉璇诲啓鏈夐棶棰�,寤鸿��澧炲ぇSDIO_TRANSFER_CLK_DIV鐨勮�剧疆.
-#define SD_DMA_MODE    		1	//DMA妯″紡,璇ユā寮忎笅,濡傛灉璇诲啓鏈夐棶棰�,寤鸿��澧炲ぇSDIO_TRANSFER_CLK_DIV鐨勮�剧疆.   
+//SDIO??????,??SD_SetDeviceMode????.
+#define SD_POLLING_MODE    	0  	//????,????,???????,????SDIO_TRANSFER_CLK_DIV???.
+#define SD_DMA_MODE    		1	//DMA??,????,???????,????SDIO_TRANSFER_CLK_DIV???.   
 
-//SDIO 鍚勭�嶉敊璇�鏋氫妇瀹氫箟
+//SDIO ????????
 typedef enum
 {	 
-	//鐗规畩閿欒��瀹氫箟 
+	//?????? 
 	SD_CMD_CRC_FAIL                    = (1), /*!< Command response received (but CRC check failed) */
 	SD_DATA_CRC_FAIL                   = (2), /*!< Data bock sent/received (CRC check Failed) */
 	SD_CMD_RSP_TIMEOUT                 = (3), /*!< Command response timeout */
@@ -81,7 +81,7 @@ typedef enum
 	SD_SDIO_FUNCTION_BUSY              = (31),
 	SD_SDIO_FUNCTION_FAILED            = (32),
 	SD_SDIO_UNKNOWN_FUNCTION           = (33),
-	//鏍囧噯閿欒��瀹氫箟
+	//??????
 	SD_INTERNAL_ERROR, 
 	SD_NOT_CONFIGURED,
 	SD_REQUEST_PENDING, 
@@ -93,7 +93,7 @@ typedef enum
 	SD_OK = 0 
 } SD_Error;		  
 
-//SD鍗�CSD瀵勫瓨鍣ㄦ暟鎹�		  
+//SD?CSD?????		  
 typedef struct
 {
 	u8  CSDStruct;            /*!< CSD structure */
@@ -135,7 +135,7 @@ typedef struct
 	u8  Reserved4;            /*!< always 1*/
 } SD_CSD;   
 
-//SD鍗�CID瀵勫瓨鍣ㄦ暟鎹�
+//SD?CID?????
 typedef struct
 {
 	u8  ManufacturerID;       /*!< ManufacturerID */
@@ -149,7 +149,7 @@ typedef struct
 	u8  CID_CRC;              /*!< CID CRC */
 	u8  Reserved2;            /*!< always 1 */
 } SD_CID;	 
-//SD鍗＄姸鎬�
+//SD???
 typedef enum
 {
 	SD_CARD_READY                  = ((uint32_t)0x00000001),
@@ -163,19 +163,19 @@ typedef enum
 	SD_CARD_ERROR                  = ((uint32_t)0x000000FF)
 }SDCardState;
 
-//SD鍗′俊鎭�,鍖呮嫭CSD,CID绛夋暟鎹�
+//SD???,??CSD,CID???
 typedef struct
 {
   SD_CSD SD_csd;
   SD_CID SD_cid;
-  long long CardCapacity;  	//SD鍗″�归噺,鍗曚綅:瀛楄妭,鏈€澶ф敮鎸�2^64瀛楄妭澶у皬鐨勫崱.
-  u32 CardBlockSize; 		//SD鍗″潡澶у皬	
-  u16 RCA;					//鍗＄浉瀵瑰湴鍧€
-  u8 CardType;				//鍗＄被鍨�
+  long long CardCapacity;  	//SD???,??:??,????2^64??????.
+  u32 CardBlockSize; 		//SD????	
+  u16 RCA;					//?????
+  u8 CardType;				//???
 } SD_CardInfo;
-extern SD_CardInfo SDCardInfo;//SD鍗′俊鎭�			 
+extern SD_CardInfo SDCardInfo;//SD???			 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-//SDIO 鎸囦护闆�
+//SDIO ???
 #define SD_CMD_GO_IDLE_STATE                       ((u8)0)
 #define SD_CMD_SEND_OP_COND                        ((u8)1)
 #define SD_CMD_ALL_SEND_CID                        ((u8)2)
@@ -225,7 +225,7 @@ extern SD_CardInfo SDCardInfo;//SD鍗′俊鎭�
 
 /** 
   * @brief Following commands are SD Card Specific commands.
-  *        SDIO_APP_CMD 锛欳MD55 should be sent before sending these commands. 
+  *        SDIO_APP_CMD ?CMD55 should be sent before sending these commands. 
   */
 #define SD_CMD_APP_SD_SET_BUSWIDTH                 ((u8)6)  /*!< For SD Card only */
 #define SD_CMD_SD_APP_STAUS                        ((u8)13) /*!< For SD Card only */
@@ -252,7 +252,7 @@ extern SD_CardInfo SDCardInfo;//SD鍗′俊鎭�
 #define SD_CMD_SD_APP_CHANGE_SECURE_AREA           ((u8)49) /*!< For SD Card only */
 #define SD_CMD_SD_APP_SECURE_WRITE_MKB             ((u8)48) /*!< For SD Card only */
   			   
-//鏀�鎸佺殑SD鍗″畾涔�
+//???SD???
 #define SDIO_STD_CAPACITY_SD_CARD_V1_1             ((u32)0x00000000)
 #define SDIO_STD_CAPACITY_SD_CARD_V2_0             ((u32)0x00000001)
 #define SDIO_HIGH_CAPACITY_SD_CARD                 ((u32)0x00000002)
@@ -262,7 +262,7 @@ extern SD_CardInfo SDCardInfo;//SD鍗′俊鎭�
 #define SDIO_SECURE_DIGITAL_IO_COMBO_CARD          ((u32)0x00000006)
 #define SDIO_HIGH_CAPACITY_MMC_CARD                ((u32)0x00000007)
 
-//SDIO鐩稿叧鍙傛暟瀹氫箟
+//SDIO??????
 #define NULL 0
 #define SDIO_STATIC_FLAGS               ((u32)0x000005FF)
 #define SDIO_CMD0TIMEOUT                ((u32)0x00010000)	  
@@ -325,10 +325,10 @@ extern SD_CardInfo SDCardInfo;//SD鍗′俊鎭�
 #define SD_CCCC_WRITE_PROT              ((u32)0x00000040)
 #define SD_CCCC_ERASE                   ((u32)0x00000020)
 																	 
-//CMD8鎸囦护
+//CMD8??
 #define SDIO_SEND_IF_COND               ((u32)0x00000008)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-//鐩稿叧鍑芥暟瀹氫箟
+//??????
 SD_Error SD_Init(void);
 void SDIO_Clock_Set(u8 clkdiv);
 
@@ -346,15 +346,12 @@ SD_Error SD_ReadMultiBlocks(u8 *buf,long long  addr,u16 blksize,u32 nblks);
 SD_Error SD_WriteBlock(u8 *buf,long long addr,  u16 blksize);	
 SD_Error SD_WriteMultiBlocks(u8 *buf,long long addr,u16 blksize,u32 nblks);
 SD_Error SD_ProcessIRQSrc(void);
-SD_Error SD_StopTransfer(void);
-SD_Error SD_WaitWriteOperation(void);
-SD_Error SD_WaitReadOperation(void);
 
 void SD_DMA_Config(u32*mbuf,u32 bufsize,u32 dir);
 //void SD_DMA_Config(u32*mbuf,u32 bufsize,u8 dir); 
 
-u8 SD_ReadDisk(u8*buf,u32 sector,u8 cnt); 	//璇籗D鍗�,fatfs/usb璋冪敤
-u8 SD_WriteDisk(u8*buf,u32 sector,u8 cnt);	//鍐橲D鍗�,fatfs/usb璋冪敤
+u8 SD_ReadDisk(u8*buf,u32 sector,u8 cnt); 	//?SD?,fatfs/usb??
+u8 SD_WriteDisk(u8*buf,u32 sector,u8 cnt);	//?SD?,fatfs/usb??
 
 
 
