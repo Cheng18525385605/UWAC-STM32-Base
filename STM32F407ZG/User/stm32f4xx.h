@@ -12,15 +12,15 @@
   *          is using in the C source code, usually in main.c. This file contains:
   *           - Configuration section that allows to select:
   *              - The device used in the target application
-  *              - To use or not the peripheral’s drivers in application code(i.e. 
-  *                code will be based on direct access to peripheral’s registers 
+  *              - To use or not the peripheralæŠ¯ drivers in application code(i.e. 
+  *                code will be based on direct access to peripheralæŠ¯ registers 
   *                rather than drivers API), this option is controlled by 
   *                "#define USE_STDPERIPH_DRIVER"
   *              - To change few application-specific parameters such as the HSE 
   *                crystal frequency
   *           - Data structures and the address mapping for all peripherals
   *           - Peripheral's registers declarations and bits definition
-  *           - Macros to access peripheral’s registers hardware
+  *           - Macros to access peripheralæŠ¯ registers hardware
   *  
   ******************************************************************************
   * @attention
@@ -124,7 +124,7 @@
         can define the HSE value in your toolchain compiler preprocessor.
   */           
 #if defined(STM32F40_41xxx) || defined(STM32F427_437xx)  || defined(STM32F429_439xx) || defined(STM32F401xx)  || defined(STM32F411xE)
- #if !defined  (HSE_VALUE)   //½«25MÐÞ¸ÄÎª8M
+ #if !defined  (HSE_VALUE)   //å°†25Mä¿®æ”¹ä¸º8M
   #define HSE_VALUE    ((uint32_t)8000000) /*!< Value of the External oscillator in Hz */
 #endif /* HSE_VALUE */
 #elif defined(STM32F446xx)
