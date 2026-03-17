@@ -117,8 +117,8 @@ SD_Error SD_Init(void)
 			clkdiv=SDIO_TRANSFER_CLK_DIV+2;	//V1.1/V2.0卡，设置最高48/4=12Mhz
 		}else clkdiv=SDIO_TRANSFER_CLK_DIV;	//SDHC等其他卡，设置最高48/2=24Mhz
 		SDIO_Clock_Set(clkdiv);	//设置时钟频率,SDIO时钟计算公式:SDIO_CK时钟=SDIOCLK/[clkdiv+2];其中,SDIOCLK固定为48Mhz 
-		errorstatus=SD_SetDeviceMode(SD_DMA_MODE);	//设置为DMA模式
-//		errorstatus=SD_SetDeviceMode(SD_POLLING_MODE);//设置为查询模式
+		// errorstatus=SD_SetDeviceMode(SD_DMA_MODE);	//设置为DMA模式
+		errorstatus=SD_SetDeviceMode(SD_POLLING_MODE);//设置为查询模式
  	}
 	return errorstatus;		 
 }
