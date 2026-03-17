@@ -1321,17 +1321,25 @@ SD_Error CmdResp7Error(void)
 	u32 timeout = SDIO_CMD0TIMEOUT;
 	while (timeout--)
 	{
-		status = SDIO->STA;
-		if (status & ((1 << 0) | (1 << 2) | (1 << 6)))
+		status = SDIO->STA; 
+		if (status & (SDIO_FLAG_CCRCFAIL  | SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CMDREND ))
 			break; // CRC错误/命令响应超时/已经收到响应(CRC校验成功)
 	}
-	if ((timeout == 0) || (status & (1 << 2))) // 响应超时
+	if ((timeout == 0) || (status & SDIO_FLAG_CTIMEOUT)) // 响应超时
 	{
 		errorstatus = SD_CMD_RSP_TIMEOUT;	// 当前卡不是2.0兼容卡,或者不支持设定的电压范围
 		SDIO_ClearFlag(SDIO_FLAG_CTIMEOUT); // 清除命令响应超时标志
 		return errorstatus;
 	}
-	if (status & 1 << 6) // 成功接收到响应
+
+	if (status & SDIO_FLAG_CCRCFAIL)
+   {
+     errorstatus = SD_CMD_CRC_FAIL;
+     SDIO_ClearFlag(SDIO_FLAG_CCRCFAIL); // 记得清空硬件标志位
+     return(errorstatus);
+   }
+
+	if (status & SDIO_FLAG_CMDREND) // 成功接收到响应
 	{
 		errorstatus = SD_OK;
 		SDIO_ClearFlag(SDIO_FLAG_CMDREND); // 清除响应标志
@@ -1360,10 +1368,10 @@ SD_Error CmdResp1Error(u8 cmd)
 		SDIO_ClearFlag(SDIO_FLAG_CCRCFAIL); // 清除标志
 		return SD_CMD_CRC_FAIL;
 	}
-	if (SDIO->RESPCMD != cmd)
+	if (SDIO_GetCommandResponse() != cmd)
 		return SD_ILLEGAL_CMD;									// 命令不匹配
 	SDIO_ClearFlag(SDIO_STATIC_FLAGS);						// 清除所有标记
-	return (SD_Error)(SDIO->RESP1 & SD_OCR_ERRORBITS); // 返回卡响应
+	return (SD_Error)(SDIO->RESP1 & SD_OCR_ERRORBITS); // 返回卡响应,强制转换。有bug
 }
 // 检查R3响应的错误状态
 // 返回值:错误状态

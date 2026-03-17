@@ -9,7 +9,9 @@
             "stm32f4xx.h": "c",
             "system.h": "c",
             "system_stm32f4xx.h": "c",
-            "stm32f4xx_conf.h": "c"
+            "stm32f4xx_conf.h": "c",
+            "limits": "c",
+            "type_traits": "c"
         }
     },
     "extensions": {}
