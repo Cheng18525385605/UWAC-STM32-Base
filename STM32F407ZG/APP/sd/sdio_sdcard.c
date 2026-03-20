@@ -96,9 +96,9 @@ SD_Error SD_Init(void)
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
 	NVIC_Init(&NVIC_InitStructure);
 
-	errorstatus = SD_PowerON(); // SD卡上电
+	errorstatus = SD_PowerON(); // SD卡上电，到acmd41，主要是区分不同sd卡
 	if (errorstatus == SD_OK)
-		errorstatus = SD_InitializeCards(); // 初始化SD卡
+		errorstatus = SD_InitializeCards(); // 初始化SD卡，拿到rca相对地址，卡的id和特殊信息
 	if (errorstatus == SD_OK)
 		errorstatus = SD_GetCardInfo(&SDCardInfo); // 获取卡信息
 	if (errorstatus == SD_OK)
@@ -223,9 +223,8 @@ SD_Error SD_PowerON(void)
 			errorstatus = CmdResp3Error(); // 等待R3响应
 
 			if (errorstatus != SD_OK)
-				return errorstatus; // 响应错误
-			response = SDIO->RESP1;
-			;																  // 得到响应
+				return errorstatus;									  // 响应错误
+			response = SDIO->RESP1;									  // 得到响应
 			validvoltage = (((response >> 31) == 1) ? 1 : 0); // 判断SD卡上电是否完成
 			count++;
 		}
@@ -361,6 +360,113 @@ SD_Error SD_InitializeCards(void)
 	}
 	return SD_OK; // 卡初始化成功
 }
+
+/**
+ * @brief  This function waits until the SDIO DMA data transfer is finished.
+ *         This function should be called after SDIO_WriteBlock() and
+ *         SDIO_WriteMultiBlocks() function to insure that all data sent by the
+ *         card are already transferred by the DMA controller.
+ * @param  None.
+ * @retval SD_Error: SD Card Error code.
+ */
+SD_Error SD_WaitWriteOperation(void)
+{
+	SD_Error errorstatus = SD_OK;
+	uint32_t timeout;
+
+	timeout = SD_DATATIMEOUT;
+
+	while ((DMAEndOfTransfer == 0x00) && (TransferEnd == 0) && (TransferError == SD_OK) && (timeout > 0))
+	{
+		timeout--;
+	}
+
+	DMAEndOfTransfer = 0x00;
+
+	timeout = SD_DATATIMEOUT;
+
+	while (((SDIO->STA & SDIO_FLAG_TXACT)) && (timeout > 0))
+	{
+		timeout--;
+	}
+
+	if (StopCondition == 1)
+	{
+		errorstatus = SD_StopTransfer();
+		StopCondition = 0;
+	}
+
+	if ((timeout == 0) && (errorstatus == SD_OK))
+	{
+		errorstatus = SD_DATA_TIMEOUT;
+	}
+
+	/*!< Clear all the static flags */
+	SDIO_ClearFlag(SDIO_STATIC_FLAGS);
+
+	if (TransferError != SD_OK)
+	{
+		return (TransferError);
+	}
+	else
+	{
+		return (errorstatus);
+	}
+}
+
+/**
+ * @brief  This function waits until the SDIO DMA data transfer is finished.
+ *         This function should be called after SDIO_ReadMultiBlocks() function
+ *         to insure that all data sent by the card are already transferred by
+ *         the DMA controller.
+ * @param  None.
+ * @retval SD_Error: SD Card Error code.
+ */
+SD_Error SD_WaitReadOperation(void)
+{
+	SD_Error errorstatus = SD_OK;
+	uint32_t timeout;
+
+	timeout = SD_DATATIMEOUT;
+
+	while ((DMAEndOfTransfer == 0x00) && (TransferEnd == 0) && (TransferError == SD_OK) && (timeout > 0))
+	{
+		timeout--;
+	}
+
+	DMAEndOfTransfer = 0x00;
+
+	timeout = SD_DATATIMEOUT;
+
+	while (((SDIO->STA & SDIO_FLAG_RXACT)) && (timeout > 0))
+	{
+		timeout--;
+	}
+
+	if (StopCondition == 1)
+	{
+		errorstatus = SD_StopTransfer();
+		StopCondition = 0;
+	}
+
+	if ((timeout == 0) && (errorstatus == SD_OK))
+	{
+		errorstatus = SD_DATA_TIMEOUT;
+	}
+
+	/*!< Clear all the static flags */
+	SDIO_ClearFlag(SDIO_STATIC_FLAGS);
+
+	if (TransferError != SD_OK)
+	{
+		return (TransferError);
+	}
+	else
+	{
+		return (errorstatus);
+	}
+}
+
 // 得到卡信息
 // cardinfo:卡信息存储区
 // 返回值:错误状态
@@ -852,8 +958,7 @@ SD_Error SD_WriteBlock(u8 *buf, long long addr, u16 blksize)
 		SD_DMA_Config((u32 *)buf, blksize, DMA_DIR_MemoryToPeripheral); // SDIO DMA配置
 		SDIO->DCTRL |= 1 << 3;														 // SDIO DMA使能.
 	}
-	SDIO_DataInitStructure.SDIO_DataBlockSize = 0;
-	; // 清除DPSM状态机配置
+	SDIO_DataInitStructure.SDIO_DataBlockSize = 0; // 清除DPSM状态机配置
 	SDIO_DataInitStructure.SDIO_DataLength = 0;
 	SDIO_DataInitStructure.SDIO_DataTimeOut = SD_DATATIMEOUT;
 	SDIO_DataInitStructure.SDIO_DPSM = SDIO_DPSM_Enable;
@@ -935,8 +1040,7 @@ SD_Error SD_WriteBlock(u8 *buf, long long addr, u16 blksize)
 
 	StopCondition = 0; // 单块写,不需要发送停止传输指令
 
-	SDIO_DataInitStructure.SDIO_DataBlockSize = power << 4;
-	; // blksize, 控制器到卡
+	SDIO_DataInitStructure.SDIO_DataBlockSize = power << 4; // blksize, 控制器到卡
 	SDIO_DataInitStructure.SDIO_DataLength = blksize;
 	SDIO_DataInitStructure.SDIO_DataTimeOut = SD_DATATIMEOUT;
 	SDIO_DataInitStructure.SDIO_DPSM = SDIO_DPSM_Enable;
@@ -1321,8 +1425,8 @@ SD_Error CmdResp7Error(void)
 	u32 timeout = SDIO_CMD0TIMEOUT;
 	while (timeout--)
 	{
-		status = SDIO->STA; 
-		if (status & (SDIO_FLAG_CCRCFAIL  | SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CMDREND ))
+		status = SDIO->STA;
+		if (status & (SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CTIMEOUT | SDIO_FLAG_CMDREND))
 			break; // CRC错误/命令响应超时/已经收到响应(CRC校验成功)
 	}
 	if ((timeout == 0) || (status & SDIO_FLAG_CTIMEOUT)) // 响应超时
@@ -1333,11 +1437,11 @@ SD_Error CmdResp7Error(void)
 	}
 
 	if (status & SDIO_FLAG_CCRCFAIL)
-   {
-     errorstatus = SD_CMD_CRC_FAIL;
-     SDIO_ClearFlag(SDIO_FLAG_CCRCFAIL); // 记得清空硬件标志位
-     return(errorstatus);
-   }
+	{
+		errorstatus = SD_CMD_CRC_FAIL;
+		SDIO_ClearFlag(SDIO_FLAG_CCRCFAIL); // 记得清空硬件标志位
+		return (errorstatus);
+	}
 
 	if (status & SDIO_FLAG_CMDREND) // 成功接收到响应
 	{
