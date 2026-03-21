@@ -1852,6 +1852,12 @@ u8 SD_ReadDisk(u8 *buf, u32 sector, u8 cnt)
 		for (n = 0; n < cnt; n++)
 		{
 			sta = SD_ReadBlock(SDIO_DATA_BUFFER, lsector + 512 * n, 512); // 单个sector的读操作
+			if (DeviceMode == SD_DMA_MODE)
+			{
+				Status = SD_WaitReadOperation();
+				while (SD_GetStatus() != SD_TRANSFER_OK)
+					;
+			}
 			memcpy(buf, SDIO_DATA_BUFFER, 512);
 			buf += 512;
 		}
@@ -1861,6 +1867,12 @@ u8 SD_ReadDisk(u8 *buf, u32 sector, u8 cnt)
 		if (cnt == 1)
 		{
 			sta = SD_ReadBlock(buf, lsector, 512); // 单个sector的读操作
+			if (DeviceMode == SD_DMA_MODE)
+			{
+				Status = SD_WaitReadOperation();
+				while (SD_GetStatus() != SD_TRANSFER_OK)
+					;
+			}
 		}
 		else
 		{
@@ -1893,6 +1905,12 @@ u8 SD_WriteDisk(u8 *buf, u32 sector, u8 cnt)
 		{
 			memcpy(SDIO_DATA_BUFFER, buf, 512);
 			sta = SD_WriteBlock(SDIO_DATA_BUFFER, lsector + 512 * n, 512); // 单个sector的写操作
+			if (DeviceMode == SD_DMA_MODE)
+			{
+				Status = SD_WaitWriteOperation();
+				while (SD_GetStatus() != SD_TRANSFER_OK)
+					;
+			}
 			buf += 512;
 		}
 	}
@@ -1901,6 +1919,12 @@ u8 SD_WriteDisk(u8 *buf, u32 sector, u8 cnt)
 		if (cnt == 1)
 		{
 			sta = SD_WriteBlock(buf, lsector, 512); // 单个sector的写操作
+			if (DeviceMode == SD_DMA_MODE)
+			{
+				Status = SD_WaitWriteOperation();
+				while (SD_GetStatus() != SD_TRANSFER_OK)
+					;
+			}
 		}
 		else
 		{
