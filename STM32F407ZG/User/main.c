@@ -65,7 +65,7 @@ int main()
 	LCD_ShowString(10, 100, tftlcd_data.width, tftlcd_data.height, 16, "SD Card OK    ");
 
 	FATFS_Init();						 // 为fatfs相关变量申请内存
-	f_mount(fs[0], "0:", 1);		 // 挂载SD卡
+	res = f_mount(fs[0], "0:", 1);		 // 挂载SD卡
 	res = f_mount(fs[1], "1:", 1); // 挂载FLASH.
 	if (res == 0X0D)					 // FLASH磁盘,FAT文件系统错误,重新格式化FLASH
 	{
@@ -84,6 +84,7 @@ int main()
 	while (fatfs_getfree("0:", &total, &free))			  // 得到SD卡的总容量和剩余容量
 	{
 		LCD_ShowString(10, 80, tftlcd_data.width, tftlcd_data.height, 16, "SD Card Fatfs Error!");
+		printf("SD Card Fatfs Error!\r\n");
 		delay_ms(200);
 		LED2 = !LED2;
 	}
@@ -100,7 +101,7 @@ int main()
 		i++;
 		if (i % 20 == 0)
 		{
-			LED2 = !LED2;
+			LED2 = !LED2;			//LED2是绿灯
 		}
 		delay_ms(10);
 	}

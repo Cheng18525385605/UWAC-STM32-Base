@@ -12,7 +12,8 @@
             "stm32f4xx_conf.h": "c",
             "limits": "c",
             "type_traits": "c",
-            "sdio_sdcard.h": "c"
+            "sdio_sdcard.h": "c",
+            "stm32f4xx_sdio.h": "c"
         }
     },
     "extensions": {}

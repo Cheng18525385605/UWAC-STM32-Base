@@ -149,7 +149,19 @@ typedef struct
 	u8  CID_CRC;              /*!< CID CRC */
 	u8  Reserved2;            /*!< always 1 */
 } SD_CID;	 
-//SD???
+
+
+/** 
+  * @brief  SDIO Transfer state  
+  */   
+typedef enum
+{
+  SD_TRANSFER_OK  = 0,
+  SD_TRANSFER_BUSY = 1,
+  SD_TRANSFER_ERROR
+} SDTransferState;
+
+//SD的状态
 typedef enum
 {
 	SD_CARD_READY                  = ((uint32_t)0x00000001),

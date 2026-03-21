@@ -114,8 +114,8 @@ SD_Error SD_Init(void)
 		else
 			clkdiv = SDIO_TRANSFER_CLK_DIV; // SDHC等其他卡，设置最高48/2=24Mhz
 		SDIO_Clock_Set(clkdiv);				  // 设置时钟频率,SDIO时钟计算公式:SDIO_CK时钟=SDIOCLK/[clkdiv+2];其中,SDIOCLK固定为48Mhz
-		// errorstatus = SD_SetDeviceMode(SD_DMA_MODE); // 设置为DMA模式
-		errorstatus = SD_SetDeviceMode(SD_POLLING_MODE); // 设置为查询模式
+		errorstatus = SD_SetDeviceMode(SD_DMA_MODE); // 设置为DMA模式
+		// errorstatus = SD_SetDeviceMode(SD_POLLING_MODE); // 设置为查询模式
 	}
 	return errorstatus;
 }
@@ -1321,62 +1321,43 @@ void SDIO_IRQHandler(void)
 // 返回值:错误代码
 SD_Error SD_ProcessIRQSrc(void)
 {
-	if (SDIO_GetFlagStatus(SDIO_FLAG_DATAEND) != RESET) // 接收完成中断
+	if (SDIO_GetITStatus(SDIO_IT_DATAEND) != RESET)
 	{
-		if (StopCondition == 1)
-		{
-			SDIO_CmdInitStructure.SDIO_Argument = 0; // 发送CMD12+结束传输
-			SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_STOP_TRANSMISSION;
-			SDIO_CmdInitStructure.SDIO_Response = SDIO_Response_Short;
-			SDIO_CmdInitStructure.SDIO_Wait = SDIO_Wait_No;
-			SDIO_CmdInitStructure.SDIO_CPSM = SDIO_CPSM_Enable;
-			SDIO_SendCommand(&SDIO_CmdInitStructure);
-
-			TransferError = CmdResp1Error(SD_CMD_STOP_TRANSMISSION);
-		}
-		else
-			TransferError = SD_OK;
-		SDIO->ICR |= 1 << 8;																													 // 清除完成中断标记
-		SDIO->MASK &= ~((1 << 1) | (1 << 3) | (1 << 8) | (1 << 14) | (1 << 15) | (1 << 4) | (1 << 5) | (1 << 9)); // 关闭相关中断
+		TransferError = SD_OK;
+		SDIO_ClearITPendingBit(SDIO_IT_DATAEND);
 		TransferEnd = 1;
-		return (TransferError);
 	}
-	if (SDIO_GetFlagStatus(SDIO_FLAG_DCRCFAIL) != RESET) // 数据CRC错误
+	else if (SDIO_GetITStatus(SDIO_IT_DCRCFAIL) != RESET)
 	{
-		SDIO_ClearFlag(SDIO_FLAG_DCRCFAIL);																								 // 清错误标志
-		SDIO->MASK &= ~((1 << 1) | (1 << 3) | (1 << 8) | (1 << 14) | (1 << 15) | (1 << 4) | (1 << 5) | (1 << 9)); // 关闭相关中断
+		SDIO_ClearITPendingBit(SDIO_IT_DCRCFAIL);
 		TransferError = SD_DATA_CRC_FAIL;
-		return (SD_DATA_CRC_FAIL);
 	}
-	if (SDIO_GetFlagStatus(SDIO_FLAG_DTIMEOUT) != RESET) // 数据超时错误
+	else if (SDIO_GetITStatus(SDIO_IT_DTIMEOUT) != RESET)
 	{
-		SDIO_ClearFlag(SDIO_FLAG_DTIMEOUT);																								 // 清中断标志
-		SDIO->MASK &= ~((1 << 1) | (1 << 3) | (1 << 8) | (1 << 14) | (1 << 15) | (1 << 4) | (1 << 5) | (1 << 9)); // 关闭相关中断
+		SDIO_ClearITPendingBit(SDIO_IT_DTIMEOUT);
 		TransferError = SD_DATA_TIMEOUT;
-		return (SD_DATA_TIMEOUT);
 	}
-	if (SDIO_GetFlagStatus(SDIO_FLAG_RXOVERR) != RESET) // FIFO上溢错误
+	else if (SDIO_GetITStatus(SDIO_IT_RXOVERR) != RESET)
 	{
-		SDIO_ClearFlag(SDIO_FLAG_RXOVERR);																								 // 清中断标志
-		SDIO->MASK &= ~((1 << 1) | (1 << 3) | (1 << 8) | (1 << 14) | (1 << 15) | (1 << 4) | (1 << 5) | (1 << 9)); // 关闭相关中断
+		SDIO_ClearITPendingBit(SDIO_IT_RXOVERR);
 		TransferError = SD_RX_OVERRUN;
-		return (SD_RX_OVERRUN);
 	}
-	if (SDIO_GetFlagStatus(SDIO_FLAG_TXUNDERR) != RESET) // FIFO下溢错误
+	else if (SDIO_GetITStatus(SDIO_IT_TXUNDERR) != RESET)
 	{
-		SDIO_ClearFlag(SDIO_FLAG_TXUNDERR);																								 // 清中断标志
-		SDIO->MASK &= ~((1 << 1) | (1 << 3) | (1 << 8) | (1 << 14) | (1 << 15) | (1 << 4) | (1 << 5) | (1 << 9)); // 关闭相关中断
+		SDIO_ClearITPendingBit(SDIO_IT_TXUNDERR);
 		TransferError = SD_TX_UNDERRUN;
-		return (SD_TX_UNDERRUN);
 	}
-	if (SDIO_GetFlagStatus(SDIO_FLAG_STBITERR) != RESET) // 起始位错误
+	else if (SDIO_GetITStatus(SDIO_IT_STBITERR) != RESET)
 	{
-		SDIO_ClearFlag(SDIO_FLAG_STBITERR);																								 // 清中断标志
-		SDIO->MASK &= ~((1 << 1) | (1 << 3) | (1 << 8) | (1 << 14) | (1 << 15) | (1 << 4) | (1 << 5) | (1 << 9)); // 关闭相关中断
+		SDIO_ClearITPendingBit(SDIO_IT_STBITERR);
 		TransferError = SD_START_BIT_ERR;
-		return (SD_START_BIT_ERR);
 	}
-	return (SD_OK);
+
+	SDIO_ITConfig(SDIO_IT_DCRCFAIL | SDIO_IT_DTIMEOUT | SDIO_IT_DATAEND |
+							SDIO_IT_TXFIFOHE | SDIO_IT_RXFIFOHF | SDIO_IT_TXUNDERR |
+							SDIO_IT_RXOVERR | SDIO_IT_STBITERR,
+					  DISABLE);
+	return (TransferError);
 }
 
 // 检查CMD0的执行状态
@@ -1397,7 +1378,6 @@ void SD_ProcessDMAIRQ(void)
 	if (DMA2->LISR & DMA_FLAG_TCIF3)
 	{
 		DMAEndOfTransfer = 0x01;
-		TransferEnd = 1;
 		DMA_ClearFlag(DMA2_Stream3, DMA_FLAG_TCIF3 | DMA_FLAG_FEIF3);
 	}
 }
@@ -1683,6 +1663,35 @@ SDCardState SD_GetState(void)
 	else
 		return (SDCardState)((resp1 >> 9) & 0x0F);
 }
+
+/**
+ * @brief  Gets the cuurent sd card data transfer status.
+ * @param  None
+ * @retval SDTransferState: Data Transfer state.
+ *   This value can be:
+ *        - SD_TRANSFER_OK: No data transfer is acting
+ *        - SD_TRANSFER_BUSY: Data transfer is acting
+ */
+SDTransferState SD_GetStatus(void)
+{
+	SDCardState cardstate = SD_CARD_TRANSFER;
+
+	cardstate = SD_GetState();
+
+	if (cardstate == SD_CARD_TRANSFER)
+	{
+		return (SD_TRANSFER_OK);
+	}
+	else if (cardstate == SD_CARD_ERROR)
+	{
+		return (SD_TRANSFER_ERROR);
+	}
+	else
+	{
+		return (SD_TRANSFER_BUSY);
+	}
+}
+
 // 查找SD卡的SCR寄存器值
 // rca:卡相对地址
 // pscr:数据缓存区(存储SCR内容)
@@ -1833,6 +1842,7 @@ void SD_DMA_Config(u32 *mbuf, u32 bufsize, u32 dir)
 // 返回值:错误状态;0,正常;其他,错误代码;
 u8 SD_ReadDisk(u8 *buf, u32 sector, u8 cnt)
 {
+	SD_Error Status;
 	u8 sta = SD_OK;
 	long long lsector = sector;
 	u8 n;
@@ -1849,10 +1859,18 @@ u8 SD_ReadDisk(u8 *buf, u32 sector, u8 cnt)
 	else
 	{
 		if (cnt == 1)
+		{
 			sta = SD_ReadBlock(buf, lsector, 512); // 单个sector的读操作
+		}
 		else
 		{
 			sta = SD_ReadMultiBlocks(buf, lsector, 512, cnt); // 多个sector
+			if (DeviceMode == SD_DMA_MODE)
+			{
+				Status = SD_WaitReadOperation();
+				while (SD_GetStatus() != SD_TRANSFER_OK)
+					;
+			}
 		}
 	}
 	return sta;
@@ -1864,6 +1882,7 @@ u8 SD_ReadDisk(u8 *buf, u32 sector, u8 cnt)
 // 返回值:错误状态;0,正常;其他,错误代码;
 u8 SD_WriteDisk(u8 *buf, u32 sector, u8 cnt)
 {
+	SD_Error Status;
 	u8 sta = SD_OK;
 	u8 n;
 	long long lsector = sector;
@@ -1880,9 +1899,19 @@ u8 SD_WriteDisk(u8 *buf, u32 sector, u8 cnt)
 	else
 	{
 		if (cnt == 1)
+		{
 			sta = SD_WriteBlock(buf, lsector, 512); // 单个sector的写操作
+		}
 		else
+		{
 			sta = SD_WriteMultiBlocks(buf, lsector, 512, cnt); // 多个sector
+			if (DeviceMode == SD_DMA_MODE)
+			{
+				Status = SD_WaitWriteOperation();
+				while (SD_GetStatus() != SD_TRANSFER_OK)
+					;
+			}
+		}
 	}
 	return sta;
 }
