@@ -95,6 +95,9 @@ SD_Error SD_Init(void)
 	NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream3_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
 	NVIC_Init(&NVIC_InitStructure);
+	NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream6_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_Init(&NVIC_InitStructure);
 
 	errorstatus = SD_PowerON(); // SD卡上电，到acmd41，主要是区分不同sd卡
 	if (errorstatus == SD_OK)
