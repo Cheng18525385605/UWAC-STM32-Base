@@ -1384,18 +1384,22 @@ void DMA2_Stream6_IRQHandler(void)
  * @param  None.
  * @retval None.
  */
+// ✅ 正确的 DMA 中断处理函数
 void SD_ProcessDMAIRQ(void)
 {
-	if (DMA2->LISR & DMA_FLAG_TCIF3)
-	{
-		DMAEndOfTransfer = 0x01;
-		DMA_ClearFlag(DMA2_Stream3, DMA_FLAG_TCIF3 | DMA_FLAG_FEIF3);
-	}
-	if (DMA2->LISR & DMA_FLAG_TCIF6)
-	{
-		DMAEndOfTransfer = 0x01;
-		DMA_ClearFlag(DMA2_Stream6, DMA_FLAG_TCIF6 | DMA_FLAG_FEIF6);
-	}
+    // 1. 处理 Stream3 (读操作完成)
+    if (DMA_GetITStatus(DMA2_Stream3, DMA_IT_TCIF3) != RESET)
+    {
+        DMAEndOfTransfer = 0x01; // 告诉上层等待函数：DMA搬完了！
+        DMA_ClearITPendingBit(DMA2_Stream3, DMA_IT_TCIF3 | DMA_IT_FEIF3);
+    }
+    
+    // 2. 处理 Stream6 (写操作完成)
+    if (DMA_GetITStatus(DMA2_Stream6, DMA_IT_TCIF6) != RESET)
+    {
+        DMAEndOfTransfer = 0x01; // 告诉上层等待函数：DMA搬完了！
+        DMA_ClearITPendingBit(DMA2_Stream6, DMA_IT_TCIF6 | DMA_IT_FEIF6);
+    }
 }
 
 SD_Error CmdError(void)
@@ -1837,7 +1841,7 @@ void SD_DMA_Config(u32 *mbuf, u32 bufsize, u32 dir)
 	DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)&SDIO->FIFO;				// DMA外设地址
 	DMA_InitStructure.DMA_Memory0BaseAddr = (u32)mbuf;								// DMA 存储器0地址
 	DMA_InitStructure.DMA_DIR = dir;														// 存储器到外设模式
-	DMA_InitStructure.DMA_BufferSize = bufsize;										// 数据传输量
+	DMA_InitStructure.DMA_BufferSize = bufsize/4;										// 数据传输量
 	DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;			// 外设非增量模式
 	DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;						// 存储器增量模式
 	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word; // 外设数据长度:32位
