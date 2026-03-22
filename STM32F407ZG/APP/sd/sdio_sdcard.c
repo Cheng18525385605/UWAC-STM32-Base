@@ -1368,6 +1368,14 @@ void DMA2_Stream3_IRQHandler(void)
 	SD_ProcessDMAIRQ();
 }
 
+
+// SDIO写完成中断（DMA2 Stream6中断）
+// 补上 SDIO DMA 写操作的中断服务函数
+void DMA2_Stream6_IRQHandler(void)
+{
+    SD_ProcessDMAIRQ(); // 官方库函数，专门用来置位 DMAEndOfTransfer 标志
+}
+
 /**
  * @brief  This function waits until the SDIO DMA data transfer is finished.
  * @param  None.
@@ -1802,16 +1810,20 @@ void SD_DMA_Config(u32 *mbuf, u32 bufsize, u32 dir)
 
 	DMA_InitTypeDef DMA_InitStructure;
 
-	DMA_ClearFlag(DMA2_Stream3, DMA_FLAG_FEIF3 | DMA_FLAG_DMEIF3 | DMA_FLAG_TEIF3 | DMA_FLAG_HTIF3 | DMA_FLAG_TCIF3);
+// 每次配置前先失能当前的 DMA 流，等待它彻底停止
+	if(dir == DMA_DIR_PeripheralToMemory) { // 读操作 (RX)
+		DMA_Cmd(DMA2_Stream3, DISABLE);
+		while(DMA_GetCmdStatus(DMA2_Stream3) != DISABLE){}
+		DMA_DeInit(DMA2_Stream3); 
+	} else { // 写操作 (TX)
+		DMA_Cmd(DMA2_Stream6, DISABLE);
+		while(DMA_GetCmdStatus(DMA2_Stream6) != DISABLE){}
+		DMA_DeInit(DMA2_Stream6);
+	}
 
-	/* DMA2 Stream3  or Stream6 disable */
-	DMA_Cmd(DMA2_Stream3, DISABLE);
-
-	while (DMA_GetCmdStatus(DMA2_Stream3) != DISABLE)
-	{
-	} // 等待DMA可配置
-
-	DMA_DeInit(DMA2_Stream3); // 清空之前该stream3上的所有中断标志
+	// 清除相关的中断标志位
+	DMA_ClearFlag(DMA2_Stream3, DMA_FLAG_FEIF3|DMA_FLAG_DMEIF3|DMA_FLAG_TEIF3|DMA_FLAG_HTIF3|DMA_FLAG_TCIF3);
+	DMA_ClearFlag(DMA2_Stream6, DMA_FLAG_FEIF6|DMA_FLAG_DMEIF6|DMA_FLAG_TEIF6|DMA_FLAG_HTIF6|DMA_FLAG_TCIF6);
 
 	DMA_InitStructure.DMA_Channel = DMA_Channel_4;									// 通道选择
 	DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)&SDIO->FIFO;				// DMA外设地址
@@ -1828,11 +1840,22 @@ void SD_DMA_Config(u32 *mbuf, u32 bufsize, u32 dir)
 	DMA_InitStructure.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;				// 全FIFO
 	DMA_InitStructure.DMA_MemoryBurst = DMA_MemoryBurst_INC4;					// 外设突发4次传输
 	DMA_InitStructure.DMA_PeripheralBurst = DMA_PeripheralBurst_INC4;			// 存储器突发4次传输
-	DMA_Init(DMA2_Stream3, &DMA_InitStructure);										// 初始化DMA Stream
-	DMA_ITConfig(DMA2_Stream3, DMA_IT_TC, ENABLE);
-	DMA_FlowControllerConfig(DMA2_Stream3, DMA_FlowCtrl_Peripheral); // 外设流控制
 
-	DMA_Cmd(DMA2_Stream3, ENABLE); // 开启DMA传输
+// 分流处理：是读还是写？
+	if(dir == DMA_DIR_PeripheralToMemory)
+	{
+		// 读操作使用 DMA2_Stream3
+		DMA_Init(DMA2_Stream3, &DMA_InitStructure);
+		DMA_ITConfig(DMA2_Stream3, DMA_IT_TC, ENABLE); // 开启传输完成中断
+		DMA_Cmd(DMA2_Stream3, ENABLE);
+	}
+	else
+	{
+		// 写操作必须使用 DMA2_Stream6 ！！！
+		DMA_Init(DMA2_Stream6, &DMA_InitStructure);
+		DMA_ITConfig(DMA2_Stream6, DMA_IT_TC, ENABLE); // 开启传输完成中断
+		DMA_Cmd(DMA2_Stream6, ENABLE);
+	}
 }
 
 // 读SD卡
