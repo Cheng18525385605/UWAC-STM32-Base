@@ -25,7 +25,7 @@ void SD_SDIO_DMA_IRQHANDLER(void);
 static u8 CardType = SDIO_STD_CAPACITY_SD_CARD_V1_1; // SD卡类型（默认为1.x卡）
 static u32 CSD_Tab[4], CID_Tab[4], RCA = 0;			  // SD卡CSD,CID以及相对地址(RCA)数据
 static u8 DeviceMode = SD_DMA_MODE;						  // 工作模式,注意,工作模式必须通过SD_SetDeviceMode,后才算数.这里只是定义一个默认的模式(SD_DMA_MODE)
-static u8 StopCondition = 0;								  // 是否发送停止传输标志位,DMA多块读写的时候用到
+volatile u8 StopCondition = 0;								  // 是否发送停止传输标志位,DMA多块读写的时候用到
 volatile SD_Error TransferError = SD_OK;				  // 数据传输错误标志,DMA读写时使用
 volatile u8 TransferEnd = 0, DMAEndOfTransfer = 0;	  // 传输结束标志,DMA读写时使用
 SD_CardInfo SDCardInfo;										  // SD卡信息
@@ -669,6 +669,9 @@ SD_Error SD_ReadBlock(u8 *buf, long long addr, u16 blksize)
 	u8 power;
 	u32 count = 0, *tempbuff = (u32 *)buf; // 转换为u32指针
 	u32 timeout = SDIO_DATATIMEOUT;
+	TransferError = SD_OK;
+   TransferEnd = 0;
+	StopCondition = 0;
 	if (NULL == buf)
 		return SD_INVALID_PARAMETER;
 	SDIO->DCTRL = 0x0; // 数据控制寄存器清零(关DMA)
@@ -797,6 +800,9 @@ SD_Error SD_ReadMultiBlocks(u8 *buf, long long addr, u16 blksize, u32 nblks)
 	u32 count = 0;
 	u32 timeout = SDIO_DATATIMEOUT;
 	tempbuff = (u32 *)buf; // 转换为u32指针
+	TransferError = SD_OK;
+   TransferEnd = 0;
+	StopCondition = 1;
 
 	SDIO->DCTRL = 0x0; // 数据控制寄存器清零(关DMA)
 	if (DeviceMode == SD_DMA_MODE)
@@ -949,6 +955,9 @@ SD_Error SD_WriteBlock(u8 *buf, long long addr, u16 blksize)
 	u32 tlen = blksize; // 总长度(字节)
 
 	u32 *tempbuff = (u32 *)buf;
+	TransferError = SD_OK;
+   TransferEnd = 0;
+	StopCondition = 0;
 
 	if (buf == NULL)
 		return SD_INVALID_PARAMETER; // 参数错误
@@ -1041,8 +1050,6 @@ SD_Error SD_WriteBlock(u8 *buf, long long addr, u16 blksize)
 	if (errorstatus != SD_OK)
 		return errorstatus;
 
-	StopCondition = 0; // 单块写,不需要发送停止传输指令
-
 	SDIO_DataInitStructure.SDIO_DataBlockSize = power << 4; // blksize, 控制器到卡
 	SDIO_DataInitStructure.SDIO_DataLength = blksize;
 	SDIO_DataInitStructure.SDIO_DataTimeOut = SD_DATATIMEOUT;
@@ -1127,6 +1134,9 @@ SD_Error SD_WriteMultiBlocks(u8 *buf, long long addr, u16 blksize, u32 nblks)
 	u32 count = 0, restwords = 0;
 	u32 tlen = nblks * blksize;
 	u32 *tempbuff = (u32 *)buf;
+	TransferError = SD_OK;
+   TransferEnd = 0;
+	StopCondition = 1;
 
 	if (buf == NULL)
 		return SD_INVALID_PARAMETER;
