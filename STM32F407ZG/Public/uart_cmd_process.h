@@ -13,18 +13,18 @@
 
 extern struct cmd_data my_cmd_data;
 typedef enum {
-    CMD_UNKNOWN = 0, // Î´ÖªÖ¸Áî
-	  CMD_SEND_PWM,    // ÉÏÎ»»ú·¢ËÍÃüÁî
-    CMD_RECEIVE_DATA    // ÉÏÎ»»ú½ÓÊÕÊı¾İ
+    CMD_UNKNOWN = 0, // æœªçŸ¥æŒ‡ä»¤
+	  CMD_SEND_PWM,    // ä¸Šä½æœºå‘é€å‘½ä»¤
+    CMD_RECEIVE_DATA    // ä¸Šä½æœºæ¥æ”¶æ•°æ®
     
     
 } Cmd_Type;
 
-// ********** º¯ÊıÉùÃ÷ **********
-void uart_cmd_process(USART_Channel_t channel); // Ö¸Áî´¦ÀíÖ÷º¯Êı
-void cmd_action_send_pwm(void); // ·¢ËÍpwm²¨ĞÎ¶¯×÷
-void cmd_action_receive_data(void); // ·¢ËÍadc²ÉÑùÊı¾İ
-void uart_send_response(USART_TypeDef*  ,char *resp); // ´®¿Ú·¢ËÍÓ¦´ğĞÅÏ¢
+// ********** å‡½æ•°å£°æ˜ **********
+void uart_cmd_process(USART_Channel_t channel); // æŒ‡ä»¤å¤„ç†ä¸»å‡½æ•°
+void cmd_action_send_pwm(void); // å‘é€pwmæ³¢å½¢åŠ¨ä½œ
+void cmd_action_receive_data(void); // å‘é€adcé‡‡æ ·æ•°æ®
+void uart_send_response(USART_TypeDef*  ,char *resp); // ä¸²å£å‘é€åº”ç­”ä¿¡æ¯
 #endif
 
 

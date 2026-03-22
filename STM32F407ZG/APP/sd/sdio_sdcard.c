@@ -1859,6 +1859,7 @@ void SD_DMA_Config(u32 *mbuf, u32 bufsize, u32 dir)
 		// 读操作使用 DMA2_Stream3
 		DMA_Init(DMA2_Stream3, &DMA_InitStructure);
 		DMA_ITConfig(DMA2_Stream3, DMA_IT_TC, ENABLE); // 开启传输完成中断
+		DMA_FlowControllerConfig(DMA2_Stream3, DMA_FlowCtrl_Peripheral);
 		DMA_Cmd(DMA2_Stream3, ENABLE);
 	}
 	else
@@ -1866,6 +1867,7 @@ void SD_DMA_Config(u32 *mbuf, u32 bufsize, u32 dir)
 		// 写操作必须使用 DMA2_Stream6 ！！！
 		DMA_Init(DMA2_Stream6, &DMA_InitStructure);
 		DMA_ITConfig(DMA2_Stream6, DMA_IT_TC, ENABLE); // 开启传输完成中断
+		DMA_FlowControllerConfig(DMA2_Stream6, DMA_FlowCtrl_Peripheral);
 		DMA_Cmd(DMA2_Stream6, ENABLE);
 	}
 }
