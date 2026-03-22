@@ -1391,6 +1391,11 @@ void SD_ProcessDMAIRQ(void)
 		DMAEndOfTransfer = 0x01;
 		DMA_ClearFlag(DMA2_Stream3, DMA_FLAG_TCIF3 | DMA_FLAG_FEIF3);
 	}
+	if (DMA2->LISR & DMA_FLAG_TCIF6)
+	{
+		DMAEndOfTransfer = 0x01;
+		DMA_ClearFlag(DMA2_Stream6, DMA_FLAG_TCIF6 | DMA_FLAG_FEIF6);
+	}
 }
 
 SD_Error CmdError(void)
