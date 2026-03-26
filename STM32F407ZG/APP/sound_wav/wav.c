@@ -2,6 +2,7 @@
 #include "adc.h"
 #include "malloc.h"
 #include "uart_cmd_process.h"
+#include "ff.h"
 
 uint32_t total_adc_samples;
 uint8_t adc_record_finish  ;
@@ -207,6 +208,32 @@ FRESULT adc_save_to_wav(const char *filename)
     return fr;
 }
 
-
+//得到path路径下,目标文件的总个数
+//path:路径		    
+//返回值:总有效文件数
+u16 audio_get_tnum(u8 *path)
+{	  
+	u8 res;
+	u16 rval=0;
+ 	DIR tdir;	 		//临时目录
+	FILINFO* tfileinfo;	//临时文件信息	 	
+	tfileinfo=(FILINFO*)mymalloc(SRAMIN,sizeof(FILINFO));//申请内存
+    res=f_opendir(&tdir,(const TCHAR*)path); //打开目录 
+	if(res==FR_OK&&tfileinfo)
+	{
+		while(1)//查询总的有效文件数
+		{
+	        res=f_readdir(&tdir,tfileinfo);       			//读取目录下的一个文件
+	        if(res!=FR_OK||tfileinfo->fname[0]==0)break;	//错误了/到末尾了,退出	 		 
+			res=f_typetell((u8*)tfileinfo->fname);	
+			if((res&0XF0)==0X40)//取高四位,看看是不是音乐文件	
+			{
+				rval++;//有效文件数增加1
+			}	    
+		}  
+	}  
+	myfree(SRAMIN,tfileinfo);//释放内存
+	return rval;
+}
 
 

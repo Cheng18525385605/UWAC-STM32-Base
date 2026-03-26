@@ -2,21 +2,26 @@
 
 char cmd_str_buf[64];
 
-u8 init_cmd_data(struct cmd_data* data){
-	data->cmd=NULL;
-	data->frequence=1;
-	data->time=1;
-	return 1;
+u8 init_cmd_data(struct cmd_data *data)
+{
+    data->cmd = NULL;
+    data->frequence = 0;
+    data->time = 0;
+    memset(data->parameter,0,sizeof(data->parameter));
+    return 1;
 }
 
 static u32 extract_num_from_str(char *str)
 {
     u32 num = 0;
-    if(str == NULL){
+    if (str == NULL)
+    {
         return 0;
     }
-    while(*str != '\0'){
-        if(*str >= '0' && *str <= '9'){
+    while (*str != '\0')
+    {
+        if (*str >= '0' && *str <= '9')
+        {
             num = num * 10 + (*str - '0');
         }
         str++;
@@ -24,71 +29,94 @@ static u32 extract_num_from_str(char *str)
     return num;
 }
 
-struct cmd_data parse_cmd(u8 *data_buf,u32 data_len){
-	struct cmd_data new_cmd_data;
+struct cmd_data parse_cmd(u8 *data_buf, u32 data_len)
+{
+    struct cmd_data new_cmd_data;
     init_cmd_data(&new_cmd_data);
 
-    //�Ϸ���У�飨��ָ�롢������Чֱ�ӷ��س�ʼ����Ľṹ�壩
-    if(data_buf == NULL || data_len < 5){  // ��С���ȣ�5���ַ���
+    // 合法性校验（空指针、长度无效直接返回初始化后的结构体）
+    if (data_buf == NULL || data_len < 5)
+    { // 最小长度（5个字符）
         return new_cmd_data;
     }
 
-    // ����ԭʼ�ַ���������strtok�޸�ԭ���������ݣ�
-    char temp_buf[100] = {0};  // ��ʱ�����������ȿɸ���ʵ���������
-    if(data_len >= sizeof(temp_buf)){
-        return new_cmd_data;  // ������ʱ���������ȣ�ֱ�ӷ���
+    // 拷贝原始字符串（避免strtok修改原缓冲区数据）
+    char temp_buf[100] = {0}; // 临时缓冲区，长度可根据实际需求调整
+    if (data_len >= sizeof(temp_buf))
+    {
+        return new_cmd_data; // 超出临时缓冲区长度，直接返回
     }
-    strncpy(temp_buf, (const char*)data_buf, data_len);
-	
-    // ��'_'Ϊ�ָ������ָ��ַ���
+    strncpy(temp_buf, (const char *)data_buf, data_len);
+
+    // 以'_'为分隔符，分割字符串
     char *token = NULL;
-    u8 seg_index = 0;  // �ָ���Ƭ��������0��ָ�1��Ƶ�ʣ�2��ʱ�䣩
+    u8 seg_index = 0; // 分割后的片段索引（0：指令，1：频率，2：时间）
 
-    // ��һ�ηָ��ȡָ�����ͣ���"send"��
+    // 第一次分割：获取指令类型（如"send"）    strtok 会破坏原来的字符串！它会把 _ 改成 \0所以 原来的 temp_buf 会被改！
     token = strtok(temp_buf, "_");
-    while(token != NULL && seg_index < 3){  // ������ǰ3��Ƭ�Σ�ָ�Ƶ�ʡ�ʱ�䣩
-        switch(seg_index){
-            case 0:  // Ƭ��0��ָ�����ͣ���"send"��
-                // �˴�����չ��ָ���жϣ���"send"��"stop"��"query"�ȣ�
-                if(strcmp(token, "send") == 0){
-                    new_cmd_data.cmd = "send";  // ��ֵָ�����ͣ�ֻ���ַ����������޸ģ�
-                    // ����Ҫ���޸ĵ�ָ���ַ�������ʹ��strcpy+��̬�ڴ�/�̶�������
-								} else if(strcmp(token, "receive") == 0){
-                    new_cmd_data.cmd = "receive";
-                } else if(strcmp(token, "stop") == 0){
-                    new_cmd_data.cmd = "stop";
-                } else if(strcmp(token, "query") == 0){
-                    new_cmd_data.cmd = "query";
-                }
-                break;
+    while (token != NULL && seg_index < 3)
+    { // 仅处理前3个片段（指令、频率、时间）
+        switch (seg_index)
+        {
+        case 0: // 片段0：指令类型（如"send"）
+            // 此处可扩展多指令判断（如"send"、"stop"、"query"等）
+            if (strcmp(token, "send") == 0)
+            {
+                new_cmd_data.cmd = "send"; // 赋值指令类型（只读字符串，不可修改）
+                                           // 若需要可修改的指令字符串，可使用strcpy+动态内存/固定缓冲区
+            }
+            else if (strcmp(token, "receive") == 0)
+            {
+                new_cmd_data.cmd = "receive";
+            }
+            else if (strcmp(token, "stop") == 0)
+            {
+                new_cmd_data.cmd = "stop";
+            }
+            else if (strcmp(token, "query") == 0)
+            {
+                new_cmd_data.cmd = "query";
+            }
+            break;
 
-            case 1:  // Ƭ��1��Ƶ�ʣ���"80khz"��"100hz"��"1mhz"��
-                new_cmd_data.frequence = extract_num_from_str(token);  // ��ȡ����
-                // �ж�Ƶ�ʵ�λ�����л���
-								if(strstr(token, "hz") != NULL){  // ���ȣ�Hz��
-                    new_cmd_data.frequence *= 1;
-                } else if(strstr(token, "khz") != NULL){  // ǧ���ȣ�1khz=1000Hz��
-                    new_cmd_data.frequence *= 1000;
-                } else if(strstr(token, "mhz") != NULL){  // �׺��ȣ�1mhz=1000000Hz��
-                    new_cmd_data.frequence *= 1000000;
-                }
-                break;
+        case 1:                                                   // 片段1：频率（如"80khz"、"100hz"、"1mhz"）
+            new_cmd_data.frequence = extract_num_from_str(token); // 提取数字
+                                                                  // 判断频率单位，进行换算
+            if (strstr(token, "hz") != NULL) //在 str1 里面查找 str2 是否存在，如果找到 → 返回找到的位置地址，如果没找到 → 返回 NULL
+            { // 赫兹（Hz）
+                new_cmd_data.frequence *= 1;
+            }
+            else if (strstr(token, "khz") != NULL)
+            { // 千赫兹（1khz=1000Hz）
+                new_cmd_data.frequence *= 1000;
+            }
+            else if (strstr(token, "mhz") != NULL)
+            { // 兆赫兹（1mhz=1000000Hz）
+                new_cmd_data.frequence *= 1000000;
+            }
 
-            case 2:  // Ƭ��2��ʱ�䣨��"5s"��"10ms"��
-                new_cmd_data.time = extract_num_from_str(token);  // ��ȡ����
-                // �ж�ʱ�䵥λ������չ����ǰĬ��s������msֻ�������жϣ�
-                if(strstr(token, "ms") != NULL){  // ���루��ѡ��չ����ǰĬ���룩
-                    new_cmd_data.time *= 1;  // ���軻��Ϊ�룬�ɸ�Ϊ /= 1000
-                }
-                // ��λ"s"���軻�㣬ֱ��ʹ����ȡ������
-                break;
+            if(new_cmd_data.frequence==0){
+                //其他格式的命令
+                memcpy(new_cmd_data.parameter,token,sizeof(token));
+            }    
+            break;
 
-            default:
-                break;
+        case 2:                                              // 片段2：时间（如"5s"、"10ms"）
+            new_cmd_data.time = extract_num_from_str(token); // 提取数字
+            // 判断时间单位，可扩展（当前默认s，新增ms只需添加判断）
+            if (strstr(token, "ms") != NULL)
+            {                           // 毫秒（可选扩展，当前默认秒）
+                new_cmd_data.time *= 1; // 如需换算为秒，可改为 /= 1000
+            }
+            // 单位"s"无需换算，直接使用提取的数字
+            break;
+
+        default:
+            break;
         }
 
         seg_index++;
-        token = strtok(NULL, "_");  // �����ָ���һ��Ƭ��
+        token = strtok(NULL, "_"); // 继续分割下一个片段
     }
 
     return new_cmd_data;

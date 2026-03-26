@@ -69,6 +69,7 @@ void create_wav_header(WAV_Header *header, uint32_t sample_rate,
                       uint32_t data_size);
 FRESULT write_wav_to_sd(const char *filename);
 FRESULT adc_save_to_wav(const char *filename);
+u16 audio_get_tnum(u8 *path);
 
 
 
