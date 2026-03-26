@@ -29,27 +29,6 @@ void adc_to_pcm16(uint16_t *adc_data, int16_t *pcm_data, uint32_t num_samples)
     }
 }
 
-///**
-//  * @brief  生成10kHz正弦波信号
-//  * @param  buffer: 输出缓冲区
-//  * @param  num_samples: 要生成的采样点数
-//  * @param  start_sample: 起始采样点
-//  * @retval 无
-//  */
-//void generate_10khz_sine_wave(int16_t *buffer, uint32_t num_samples, uint32_t start_sample)
-//{
-//    uint32_t i;
-//    float angle;
-//    
-//    for(i = 0; i < num_samples; i++)
-//    {
-//        // 计算当前采样点的相位
-//        angle = 2.0f * PI * FREQUENCY * (start_sample + i) / SAMPLE_RATE;
-//        
-//        // 生成正弦波值 (-32767 到 32767)
-//        buffer[i] = (int16_t)(AMPLITUDE * sinf(angle));
-//    }
-//}
 
 /**
   * @brief  创建WAV文件头
@@ -84,114 +63,7 @@ void create_wav_header(WAV_Header *header, uint32_t sample_rate,
     header->subchunk2Size = data_size;
 }
 
-/**
-  * @brief  写入WAV文件到SD卡
-  * @param  filename: 文件名
-  * @retval FRESULT: FATFS操作结果
-  */
-/*
-FRESULT write_wav_to_sd(const char *filename)
-{
-    FRESULT fr;
-    FIL file;
-    UINT bytes_written;
-    uint32_t total_bytes = 0;
-    uint32_t samples_written = 0;
-    
-    // 1. 创建文件
-    fr = f_open(&file, filename, FA_CREATE_ALWAYS | FA_WRITE);
-    if(fr != FR_OK)
-    {
-        printf("Failed to create file: %d\n", fr);
-        return fr;
-    }
-    
-    // 2. 先写入一个空的WAV文件头
-    WAV_Header wav_header;
-    memset(&wav_header, 0, sizeof(WAV_Header));
-    fr = f_write(&file, &wav_header, sizeof(WAV_Header), &bytes_written);
-    if(fr != FR_OK || bytes_written != sizeof(WAV_Header))
-    {
-        f_close(&file);
-        return FR_DISK_ERR;
-    }
-    
-    total_bytes += bytes_written;
-    
-    // 3. 生成并写入音频数据
-    LCD_ShowString(10, 140, tftlcd_data.width, tftlcd_data.height, 16, "Generating WAV...");
-    printf("Generating 10kHz sine wave...\n");
-    
-    while(samples_written < TOTAL_SAMPLES)
-    {
-        uint32_t samples_to_generate = BUFFER_SIZE;
-        
-        // 最后一次可能不满一个缓冲区
-        if(samples_written + samples_to_generate > TOTAL_SAMPLES)
-        {
-            samples_to_generate = TOTAL_SAMPLES - samples_written;
-        }
-        
-        // 生成10kHz正弦波
-        generate_10khz_sine_wave((int16_t *)audio_buffer, samples_to_generate, samples_written);
-        
-        // 写入到文件
-        uint32_t bytes_to_write = samples_to_generate * 2;  // 16位 = 2字节
-        fr = f_write(&file, audio_buffer, bytes_to_write, &bytes_written);
-        
-        if(fr != FR_OK || bytes_written != bytes_to_write)
-        {
-            printf("Write error at sample %du\n", samples_written);
-            f_close(&file);
-            return FR_DISK_ERR;
-        }
-        
-        total_bytes += bytes_written;
-        samples_written += samples_to_generate;
-        
-        // 显示进度
-        if((samples_written % (SAMPLE_RATE/2)) == 0)  // 每0.5秒更新一次
-        {
-            uint8_t percent = (samples_written * 100) / TOTAL_SAMPLES;
-            printf("Progress: %d%%\n", percent);
-            LCD_ShowNum(10+8 * 10, 160, percent, 3, 16);
-            LCD_ShowString(10+8 * 13, 160, tftlcd_data.width, tftlcd_data.height, 16, "%");
-        }
-        
-        // LED闪烁指示进度
-        LED1 = !LED1;
-    }
-    
-    // 4. 回到文件开头，写入正确的WAV头
-    f_lseek(&file, 0);
-    create_wav_header(&wav_header, SAMPLE_RATE, 16, 1, TOTAL_SAMPLES * 2);
-    
-    fr = f_write(&file, &wav_header, sizeof(WAV_Header), &bytes_written);
-    if(fr != FR_OK || bytes_written != sizeof(WAV_Header))
-    {
-        f_close(&file);
-        return FR_DISK_ERR;
-    }
-    
-    // 5. 关闭文件
-    fr = f_close(&file);
-    
-    if(fr == FR_OK)
-    {
-        printf("WAV file created successfully!\n");
-        printf("File size: %lu bytes\n", total_bytes);
-        printf("Duration: %d seconds\n", DURATION);
-        printf("Sample rate: %d Hz\n", SAMPLE_RATE);
-        printf("Frequency: %d Hz\n", FREQUENCY);
-        
-        LCD_ShowString(10, 140, tftlcd_data.width, tftlcd_data.height, 16, "WAV file created!   ");
-        LCD_ShowString(10, 160, tftlcd_data.width, tftlcd_data.height, 16, "Size:           B  ");
-        LCD_ShowNum(10+8 * 6, 160, total_bytes, 8, 16);
-    }
-    
-    return fr;
-}
-*/
+
 /**
  * @brief  将ADC采样数据写入SD卡为WAV文件
  * @param  filename: 保存的文件名（如"ADC_REC.WAV"）
@@ -218,7 +90,7 @@ FRESULT adc_save_to_wav(const char *filename)
         return FR_NOT_ENOUGH_CORE; // 内存不足
     }
     
-    // 1. 重置状态
+    // 1. 重置状态，别的文件中定义的adc.c中
     total_adc_samples = 0;
     adc_record_finish = 0;
     curr_write_buf = 0xFF;
@@ -334,10 +206,6 @@ FRESULT adc_save_to_wav(const char *filename)
     
     return fr;
 }
-
-
-
-
 
 
 

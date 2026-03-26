@@ -13,7 +13,8 @@
             "limits": "c",
             "type_traits": "c",
             "sdio_sdcard.h": "c",
-            "stm32f4xx_sdio.h": "c"
+            "stm32f4xx_sdio.h": "c",
+            "time.h": "c"
         }
     },
     "extensions": {}

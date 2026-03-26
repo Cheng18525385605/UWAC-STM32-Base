@@ -17,7 +17,7 @@ void cmd_action_send_pwm(void)
     
     delay_ms(500);	//等待
     uart_send_response(USART1,"send_pwm_OK"); // 向上位机返回应答
-    tim4_count=my_cmd_data.time; //设置定时计数变量，用来设置pwm的发送时间
+    tim4_count=my_cmd_data.time; //设置定时计数变量，用来设置pwm的发送时间，单位是由TIM4的中断间隔设定
     TIM4_Init(10000,8399);     //设置定时1s间隔
 
     u32 arr_val;
@@ -47,22 +47,7 @@ void cmd_action_send_pwm(void)
 		adc_save_to_wav("ADC_PWM_REC1.WAV");
 		delay_ms(my_cmd_data.time*1000+500);   //等待
 		TIM_Cmd( TIM3 , DISABLE );//关闭adc的触发时钟   adc+dma//关闭adc+dma
-//		for(int i=0;i<ADC1_DMA_Size;i++){
-//				printf("第%d个数据%d\r\n",i,ADC1_ConvertedValue[i]);
-//		}
-//		ADC_U16_To_UART_StrBuff(ADC1_ConvertedValue,UART_DMA_STR_BUFF,ADC1_DMA_Size);                    //u16转换为u8给uart传输
-//		USART_DMACmd(USART2,USART_DMAReq_Tx,ENABLE);  //使能串口1的DMA发送     
-//		DMAx_Enable(DMA1_Stream6,UART_DMA_STR_size);     //开始一次DMA传输！//开启uart+dma
-//		while(1)//等待传输完成清除相关的完成状态，以供下次传输使用
-//		{
-//			if(DMA_GetFlagStatus(DMA1_Stream6,DMA_FLAG_TCIF6)!=0)//判断DMA数据流7是否传输完成
-//			{
-//				DMA_ClearFlag(DMA1_Stream6,DMA_FLAG_TCIF6);
-//				break;
-//			}
-//			LED2=!LED2;
-//			delay_ms(300);	
-//		}
+
 }
 
 // 发送adc采样数据
