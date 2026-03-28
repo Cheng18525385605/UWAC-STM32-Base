@@ -14,76 +14,81 @@ struct cmd_data my_cmd_data;
 void cmd_action_send_wav(void)
 {
     DIR wavdir;
-    FILINFO *wavfileinfo;//文件信息 
-    u16 totwavnum; 		//音乐文件总数
-    u8 *pname;			//带路径的文件名
-    u32 *wavoffsettbl;	//音乐offset索引表
+    FILINFO *wavfileinfo; // 文件信息
+    u16 totwavnum;        // 音乐文件总数
+    u8 *pname;            // 带路径的文件名
+    u32 *wavoffsettbl;    // 音乐offset索引表
     u8 res;
-    u16 curindex;		//当前索引
+    u16 curindex; // 当前索引
     u32 temp;
 
-    //读取wav文件到buf中，从buf中通过dma往pwm的寄存器中传输数据
-    //第一步打开声音文件，首先判断是否有wav文件再music目录下。
-    while(f_opendir(&wavdir,"0:/MUSIC"))//打开音乐文件夹
- 	{	    
-		uart_send_response(USART1, "open 0:/MUSIC error"); // 向上位机返回应答		
-        return ;	  
-	} 	
-    totwavnum=audio_get_tnum("0:/MUSIC"); //得到总有效文件数
-    printf("number of music file:%d",totwavnum);
-    wavfileinfo=(FILINFO*)mymalloc(SRAMIN,sizeof(FILINFO));	//申请内存
-    wavoffsettbl=mymalloc(SRAMIN,4*totwavnum);				//申请4*totwavnum个字节的内存,用于存放音乐文件off block索引
-    pname=mymalloc(SRAMIN,_MAX_LFN*2+1);					//为带路径的文件名分配内存
-    while(!wavfileinfo||!pname||!wavoffsettbl)//内存分配出错
- 	{	    
-		printf("mymalloc fail 内存分配失败");	
-        return;		  
-	}  	
-    res=f_opendir(&wavdir,"0:/MUSIC"); //打开目录
-    if(res==FR_OK)
-	{
-		curindex=0;//当前索引为0
-		while(1)//全部查询一遍
-		{						
-			temp=wavdir.dptr;								//记录当前index 
-	        res=f_readdir(&wavdir,wavfileinfo);       		//读取目录下的一个文件
-	        if(res!=FR_OK||wavfileinfo->fname[0]==0)break;	//错误了/到末尾了,退出 		 
-			res=f_typetell((u8*)wavfileinfo->fname);	
-			if((res&0XF0)==0X40)//取高四位,看看是不是音乐文件	
-			{
-				wavoffsettbl[curindex]=temp;//记录索引
-				curindex++;
-			}	    
-		} 
-	}   
-   	curindex=0;											//从0开始显示
-   	res=f_opendir(&wavdir,(const TCHAR*)"0:/MUSIC"); 	//打开目录
-	while(res==FR_OK)//打开成功
-	{	
-		dir_sdi(&wavdir,wavoffsettbl[curindex]);				//改变当前目录索引	   
-        res=f_readdir(&wavdir,wavfileinfo);       				//读取目录下的一个文件
-        if(res!=FR_OK||wavfileinfo->fname[0]==0)break;			//错误了/到末尾了,退出		 
-		strcpy((char*)pname,"0:/MUSIC/");						//复制路径(目录)
-		strcat((char*)pname,(const char*)wavfileinfo->fname);	//将文件名接在后面
- 		LCD_Fill(60,190,240,190+16,WHITE);			//清除之前的显示
-		// LCD_ShowFontString(60,190,240-60,16,(u8*)wavfileinfo->fname,16,0);//显示歌曲名字 
-		// audio_index_show(curindex+1,totwavnum);
-        printf("文件：%s",pname);
-		// key=audio_play_song(pname); 			 		//播放这个音频文件
-		// if(key==KEY2_PRESS)		//上一曲
-		// {
-		// 	if(curindex)curindex--;
-		// 	else curindex=totwavnum-1;
- 		// }else if(key==KEY0_PRESS)//下一曲
-		// {
-		// 	curindex++;		   	
-		// 	if(curindex>=totwavnum)curindex=0;//到末尾的时候,自动从头开始
- 		// }else break;	//产生了错误 	 
-	} 											   		    
-	myfree(SRAMIN,wavfileinfo);			//释放内存			    
-	myfree(SRAMIN,pname);				//释放内存			    
-	myfree(SRAMIN,wavoffsettbl);		//释放内存	
-    return ;
+    // 读取wav文件到buf中，从buf中通过dma往pwm的寄存器中传输数据
+    // 第一步打开声音文件，首先判断是否有wav文件再music目录下。
+    while (f_opendir(&wavdir, "0:/MUSIC")) // 打开音乐文件夹
+    {
+        uart_send_response(USART1, "open 0:/MUSIC error"); // 向上位机返回应答
+        return;
+    }
+    totwavnum = audio_get_tnum("0:/MUSIC"); // 得到总有效文件数
+    printf("number of music file:%d", totwavnum);
+    wavfileinfo = (FILINFO *)mymalloc(SRAMIN, sizeof(FILINFO)); // 申请内存
+    wavoffsettbl = mymalloc(SRAMIN, 4 * totwavnum);             // 申请4*totwavnum个字节的内存,用于存放音乐文件off block索引
+    pname = mymalloc(SRAMIN, _MAX_LFN * 2 + 1);                 // 为带路径的文件名分配内存
+    while (!wavfileinfo || !pname || !wavoffsettbl)             // 内存分配出错
+    {
+        printf("mymalloc fail 内存分配失败");
+        return;
+    }
+    res = f_opendir(&wavdir, "0:/MUSIC"); // 打开目录
+    if (res == FR_OK)
+    {
+        curindex = 0; // 当前索引为0
+        while (1)     // 全部查询一遍
+        {
+            temp = wavdir.dptr;                    // 记录当前index
+            res = f_readdir(&wavdir, wavfileinfo); // 读取目录下的一个文件
+            if (res != FR_OK || wavfileinfo->fname[0] == 0)
+                break; // 错误了/到末尾了,退出
+            res = f_typetell((u8 *)wavfileinfo->fname);
+            if ((res & 0XF0) == 0X40) // 取高四位,看看是不是音乐文件
+            {
+                wavoffsettbl[curindex] = temp; // 记录索引
+                curindex++;
+            }
+        }
+    }
+    curindex = 0;                                        // 从0开始显示
+    res = f_opendir(&wavdir, (const TCHAR *)"0:/MUSIC"); // 打开目录
+
+    dir_sdi(&wavdir, wavoffsettbl[curindex]); // 改变当前目录索引
+    res = f_readdir(&wavdir, wavfileinfo);    // 读取目录下的一个文件
+    if (res != FR_OK || wavfileinfo->fname[0] == 0)
+        return;                                              // 错误了/到末尾了,退出
+    strcpy((char *)pname, "0:/MUSIC/");                      // 复制路径(目录)
+    strcat((char *)pname, (const char *)wavfileinfo->fname); // 将文件名接在后面
+    if (pname != NULL)
+    {
+        printf("file:%s\r\n", pname);
+    }
+    else
+    {
+        printf("文件名解析失败！\r\n");
+    }
+    res = start_wav_pwm((char *)pname); // 开始wav转换为
+    // if(key==KEY2_PRESS)		//上一曲
+    // {
+    // 	if(curindex)curindex--;
+    // 	else curindex=totwavnum-1;
+    // }else if(key==KEY0_PRESS)//下一曲
+    // {
+    // 	curindex++;
+    // 	if(curindex>=totwavnum)curindex=0;//到末尾的时候,自动从头开始
+    // }else break;	//产生了错误
+
+    myfree(SRAMIN, wavfileinfo);  // 释放内存
+    myfree(SRAMIN, pname);        // 释放内存
+    myfree(SRAMIN, wavoffsettbl); // 释放内存
+    return;
 }
 
 // 发送pwm波形动作
@@ -96,7 +101,7 @@ void cmd_action_send_pwm(void)
     delay_ms(500);                             // 等待
     uart_send_response(USART1, "send_pwm_OK"); // 向上位机返回应答
     tim4_count = my_cmd_data.time;             // 设置定时计数变量，用来设置pwm的发送时间，单位是由TIM4的中断间隔设定
-    TIM4_Init(10000, 8399);                    // 设置定时1s间隔
+    TIM4_Init(10000, 8399);                    // 设置定时1s间隔  Tout= ((per)*(psc+1))/Tclk；
 
     u32 arr_val;
     u16 psc_val;
@@ -195,10 +200,10 @@ void uart_cmd_process(USART_Channel_t channel)
         {
             if (strcmp(my_cmd_data.cmd, "send") == 0)
             {
-                if(my_cmd_data.frequence!=0)
+                if (my_cmd_data.frequence != 0)
                     cmd_type = CMD_SEND_PWM;
-                else 
-                    cmd_type =CMD_SEND_WAV;
+                else
+                    cmd_type = CMD_SEND_WAV;
             }
             else if (strcmp(my_cmd_data.cmd, "receive") == 0)
             {

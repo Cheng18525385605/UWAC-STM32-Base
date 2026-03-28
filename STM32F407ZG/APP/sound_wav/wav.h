@@ -70,6 +70,9 @@ void create_wav_header(WAV_Header *header, uint32_t sample_rate,
 FRESULT write_wav_to_sd(const char *filename);
 FRESULT adc_save_to_wav(const char *filename);
 u16 audio_get_tnum(u8 *path);
+u8 wav_decode_init(u8 *fname, WAV_Header *wav_header);
+u8 start_wav_pwm((char *)pname);
+static void TIM_Config(void);
 
 
 

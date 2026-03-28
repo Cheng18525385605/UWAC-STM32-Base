@@ -236,4 +236,184 @@ u16 audio_get_tnum(u8 *path)
 	return rval;
 }
 
+// WAV解析初始化（精简版：只解析标准WAV文件头）
+// fname: 文件路径+文件名
+// wav_header: 用来存放解析出的WAV头信息
+// 返回值：0=成功，1=打开失败，2=非WAV文件
+u8 wav_decode_init(u8 *fname, WAV_Header *wav_header)
+{
+    FIL file;
+    FRESULT res;
+    UINT br;  // 实际读取字节数
+
+    // 1. 打开WAV文件
+    res = f_open(&file, (TCHAR *)fname, FA_READ);
+    if (res != FR_OK) return 1; // 打开文件失败
+
+    // 2. 直接读取 44 字节标准 WAV 头（你给的结构体正好44字节）
+    res = f_read(&file, wav_header, sizeof(WAV_Header), &br);
+    
+    // 3. 关闭文件（我们只需要头，读完立刻关！）
+    f_close(&file);
+
+    if (res != FR_OK || br < sizeof(WAV_Header)) return 2;
+
+    // 4. 校验是不是 RIFF + WAVE
+    if (memcmp(wav_header->chunkID, "RIFF", 4) != 0 ||
+        memcmp(wav_header->format, "WAVE", 4) != 0)
+    {
+        return 2; // 不是标准 WAV 文件
+    }
+
+    // 5. 校验 fmt 和 data 标记
+    if (memcmp(wav_header->subchunk1ID, "fmt ", 4) != 0 ||
+        memcmp(wav_header->subchunk2ID, "data", 4) != 0)
+    {
+        return 2;
+    }
+
+    return 0; // 解析成功！
+}
+
+u8 start_wav_pwm((char *)pname)
+{
+    WAV_Header wav;
+    u8 res = wav_decode_init(pname, &wav);
+   /* TIM Configuration */
+  TIM_Config();
+
+  /* TIM1 DMA Transfer example -------------------------------------------------
+  
+  TIM1 input clock (TIM1CLK) is set to 2 * APB2 clock (PCLK2), since APB2 
+  prescaler is different from 1.   
+    TIM1CLK = 2 * PCLK2  
+    PCLK2 = HCLK / 2 
+    => TIM1CLK = 2 * (HCLK / 2) = HCLK = SystemCoreClock
+  
+  TIM1CLK = SystemCoreClock, Prescaler = 0, TIM1 counter clock = SystemCoreClock
+  SystemCoreClock is set to 168 MHz for STM32F4xx devices.
+
+  The objective is to configure TIM1 channel 3 to generate complementary PWM
+  signal with a frequency equal to 17.57 KHz:
+     - TIM1_Period = (SystemCoreClock / 17570) - 1
+  and a variable duty cycle that is changed by the DMA after a specific number of
+  Update DMA request.
+
+  The number of this repetitive requests is defined by the TIM1 Repetion counter,
+  each 3 Update Requests, the TIM1 Channel 3 Duty Cycle changes to the next new 
+  value defined by the aSRC_Buffer.
+  
+  Note: 
+    SystemCoreClock variable holds HCLK frequency and is defined in system_stm32f4xx.c file.
+    Each time the core clock (HCLK) changes, user had to call SystemCoreClockUpdate()
+    function to update SystemCoreClock variable value. Otherwise, any configuration
+    based on this variable will be incorrect.  
+  -----------------------------------------------------------------------------*/
+  
+  /* Compute the value to be set in ARR register to generate signal frequency at 17.57 Khz */
+  uhTimerPeriod = (SystemCoreClock / 17570 ) - 1;
+  /* Compute CCR1 value to generate a duty cycle at 50% */
+  aSRC_Buffer[0] = (uint16_t) (((uint32_t) 5 * (uhTimerPeriod - 1)) / 10);
+  /* Compute CCR1 value to generate a duty cycle at 37.5% */
+  aSRC_Buffer[1] = (uint16_t) (((uint32_t) 375 * (uhTimerPeriod - 1)) / 1000);
+  /* Compute CCR1 value to generate a duty cycle at 25% */
+  aSRC_Buffer[2] = (uint16_t) (((uint32_t) 25 * (uhTimerPeriod - 1)) / 100);
+
+  /* TIM1 Peripheral Configuration -------------------------------------------*/
+  /* TIM1 clock enable */
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
+
+  /* Time Base configuration */
+  TIM_TimeBaseStructure.TIM_Prescaler = 0;
+  TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+  TIM_TimeBaseStructure.TIM_Period = uhTimerPeriod;
+  TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+  TIM_TimeBaseStructure.TIM_RepetitionCounter = 3;
+
+  TIM_TimeBaseInit(TIM1, &TIM_TimeBaseStructure);
+
+  /* Channel 3 Configuration in PWM mode */
+  TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM2;
+  TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+  TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Enable;
+  TIM_OCInitStructure.TIM_Pulse = aSRC_Buffer[0];
+  TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
+  TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_Low;
+  TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
+  TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCIdleState_Reset;
+
+  TIM_OC3Init(TIM1, &TIM_OCInitStructure);
+
+  /* Enable preload feature */
+  TIM_OC3PreloadConfig(TIM1, TIM_OCPreload_Enable);
+  
+  /* TIM1 counter enable */
+  TIM_Cmd(TIM1, ENABLE);
+  
+  /* DMA enable*/
+  DMA_Cmd(DMA2_Stream6, ENABLE);
+  
+  /* TIM1 Update DMA Request enable */
+  TIM_DMACmd(TIM1, TIM_DMA_CC3, ENABLE);
+
+  /* Main Output Enable */
+  TIM_CtrlPWMOutputs(TIM1, ENABLE);
+
+  while (1)
+  {
+  }
+}
+
+/**
+  * @brief  Configure the TIM1 Pins.
+  * @param  None
+  * @retval None
+  */
+static void TIM_Config(void)
+{
+  GPIO_InitTypeDef GPIO_InitStructure;
+  DMA_InitTypeDef DMA_InitStructure;
+  
+  /* GPIOA and GPIOB clock enable */
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOB, ENABLE);
+
+  /* GPIOA Configuration: Channel 3 as alternate function push-pull */
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10 ;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP ;
+  GPIO_Init(GPIOA, &GPIO_InitStructure); 
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_TIM1);
+
+  /* GPIOB Configuration: Channel 3N as alternate function push-pull */
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;
+  GPIO_Init(GPIOB, &GPIO_InitStructure);
+  GPIO_PinAFConfig(GPIOB, GPIO_PinSource15, GPIO_AF_TIM1);
+
+  /* DMA clock enable */
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2 , ENABLE);
+
+  DMA_DeInit(DMA2_Stream6);
+  DMA_InitStructure.DMA_Channel = DMA_Channel_6;  
+  DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)(TIM1_CCR3_ADDRESS) ;
+  DMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)aSRC_Buffer;
+  DMA_InitStructure.DMA_DIR = DMA_DIR_MemoryToPeripheral;
+  DMA_InitStructure.DMA_BufferSize = 3;
+  DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+  DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+  DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord;
+  DMA_InitStructure.DMA_MemoryDataSize = DMA_PeripheralDataSize_HalfWord;
+  DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
+  DMA_InitStructure.DMA_Priority = DMA_Priority_High;
+  DMA_InitStructure.DMA_FIFOMode = DMA_FIFOMode_Disable;
+  DMA_InitStructure.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
+  DMA_InitStructure.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+  DMA_InitStructure.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+
+  DMA_Init(DMA2_Stream6, &DMA_InitStructure);
+}
+
+
+
 

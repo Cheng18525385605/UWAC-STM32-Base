@@ -16,7 +16,10 @@
             "stm32f4xx_sdio.h": "c",
             "time.h": "c",
             "*.tcc": "c",
-            "wav.h": "c"
+            "wav.h": "c",
+            "cstdlib": "c",
+            "cmath": "c",
+            "typeinfo": "c"
         }
     },
     "extensions": {}
