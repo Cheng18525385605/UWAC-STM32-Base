@@ -74,7 +74,8 @@ void cmd_action_send_wav(void)
     {
         printf("文件名解析失败！\r\n");
     }
-    res = start_wav_pwm((char *)pname); // 开始wav转换为
+    // res = start_wav_pwm((u8 *)pname); // 开始wav转换为
+    
     // if(key==KEY2_PRESS)		//上一曲
     // {
     // 	if(curindex)curindex--;
